@@ -77,8 +77,9 @@ export function ChatComposer({
 		if (enterToSubmit) {
 			if (event.shiftKey) return;
 			event.preventDefault();
-			onSend();
+			if (canSend) onSend();
 		} else if (hasSubmitModifier) {
+			if (!canSend) return;
 			event.preventDefault();
 			onSend();
 		}
