@@ -10,7 +10,7 @@ import {
 	usePopover,
 } from "@spacedrive/primitives";
 import {AnimatePresence, motion} from "framer-motion";
-import {type ReactNode} from "react";
+import {type KeyboardEvent, type ReactNode} from "react";
 
 import {ModelSelector} from "./ModelSelector";
 import type {ModelOption} from "./types";
@@ -45,6 +45,11 @@ export interface ChatComposerProps {
 	onOpenVoice?: () => void;
 	/** Optional content rendered at the far right of the toolbar (before send) */
 	toolbarExtra?: ReactNode;
+	/**
+	 * If true (default), Enter sends and Shift+Enter inserts a newline.
+	 * If false, Enter inserts a newline and Cmd/Ctrl/Alt+Enter sends.
+	 */
+	enterToSubmit?: boolean;
 }
 
 /**
@@ -62,8 +67,22 @@ export function ChatComposer({
 	modelSelector,
 	onOpenVoice,
 	toolbarExtra,
+	enterToSubmit = true,
 }: ChatComposerProps) {
 	const canSend = !isSending && draft.trim().length > 0;
+
+	const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+		if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+		const hasSubmitModifier = event.metaKey || event.ctrlKey || event.altKey;
+		if (enterToSubmit) {
+			if (event.shiftKey) return;
+			event.preventDefault();
+			onSend();
+		} else if (hasSubmitModifier) {
+			event.preventDefault();
+			onSend();
+		}
+	};
 
 	return (
 		<>
@@ -80,12 +99,7 @@ export function ChatComposer({
 				<textarea
 					value={draft}
 					onChange={(event) => onDraftChange(event.target.value)}
-					onKeyDown={(event) => {
-						if (event.key === "Enter" && !event.shiftKey) {
-							event.preventDefault();
-							onSend();
-						}
-					}}
+					onKeyDown={handleKeyDown}
 					placeholder={placeholder}
 					rows={2}
 					className="text-ink placeholder:text-ink-faint block w-full resize-none rounded-md border-0 bg-transparent text-sm leading-6 outline-none focus:border-0 focus:outline-none focus:ring-0"
